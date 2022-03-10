@@ -1,7 +1,7 @@
 ---
 title: "Time Series Forecasting Dengan Modeltime"
 author: "Victor Nugraha"
-date: "2/19/2022"
+date: "3/8/2022"
 output: 
   html_document:
     toc: true
@@ -53,17 +53,16 @@ Tentu saja ebagai seorang <i>Data Scientist</i> kita akan sangat terbantu karena
 # Library
 
 ```{r}
-# Data Wrangling
+# Data Preparation
 library(tidyverse)
 library(lubridate)
-
-# Data Visualisasi
 library(timetk)
 
 # Machine Learning
 library(tidymodels)
 library(modeltime)
 library(modeltime.resample)
+library(smooth)
 ```
 
 # Modeltime Workflow
@@ -85,17 +84,18 @@ Dari total 36 kolom yang terdapat pada dataframe di atas, kita hanya akan menggu
 
 ### Pembersihan Data
 
-Tahapan selanjutnya yang perlu kita lakukan adalah mempersiapkan data kita agar dapat diproses lebih lanjut. Proses pembersihan yang akan dilakukan terlebih dahulu adalah menghilangkan kolom yang tidak diperlukan dan mengubah tipe data menjadi format yang lebih sesuai.
+Tahapan selanjutnya yang perlu kita lakukan adalah mempersiapkan data kita agar dapat diproses lebih lanjut. Proses pembersihan yang akan dilakukan terlebih dahulu adalah menghilangkan kolom yang tidak diperlukan, mengubah tipe data menjadi format yang lebih sesuai dan memastikan bahwa tanggalnya sudah berurutan.
 
 ```{r}
 crude_oil_clean <- crude_oil %>% 
   select(Month, U.S..Crude.Oil) %>% 
-  mutate(Month = ymd(Month)) 
+  mutate(Month = ymd(Month)) %>% 
+  arrange(Month)
 
 glimpse(crude_oil_clean)
 ```
 
-Selain melakukan dua proses di atas, kita juga harus memastikan bahwa tidak ada <i>missing value</i> pada data kita karena jika adanya <i>missing value</i> akan sangat mempengaruhi hasil prediksi.
+Selain melakukan dua proses di atas, kita juga harus memastikan bahwa tidak ada <i>missing value</i> karena jika adanya <i>missing value</i> akan sangat mempengaruhi hasil prediksi.
 
 ```{r}
 crude_oil_clean %>% 
@@ -126,11 +126,19 @@ crude_oil_clean %>%
                    .title = "Hasil Tambang Minyak Bumi Amerika Serikat (Juni 2008 - September 2018)")
 ```
 
-Dari hasil visualisasi di atas, kita bisa menarik kesimpulan bahwa data hasil tambang minyak bumi di Amerika Serikat tidak memiliki pola musiman tapi memiliki pola arah yang cenderung meingkat dari waktu ke waktu, maka dari itu data tersebut dapat dikategorikan sebagai data tidak stasioner.
+Dari hasil visualisasi di atas, kita bisa menarik kesimpulan bahwa data hasil tambang minyak bumi di Amerika Serikat tidak memiliki pola musiman tapi memiliki pola arah yang cenderung meingkat dari waktu ke waktu, maka dari itu data tersebut dapat dikategorikan sebagai data tidak stasioner. 
 
 ## Cross Validation
 
+Langkah selanjutnya kita akan melakukan <i>cross validation</i> agar kita dapat mengevaluasi stabilitas model <i>time series forecasting</i> yang dibuat. Pada tahapan <i>cross validation</i> kali ini, kita tidak hanya membagi data pembelajaran dan data validasinya berdasarkan 1 kurun waktu saja melainkan akan dibagi ke 4 kurun waktu yang berbeda. Dengan dibaginya data pembelajaran dan data validasinya ke beberapa rentan waktu yang berbeda, kita bisa lebih yakin terhadap stabilitas model yang dibuat karena model tersebut tidak divalidasi sekali saja melainkan beberapa kali dengan kurun waktu yang berbeda-beda.
 
+Untuk membagi data kita menjadi ke 4 kurun waktu yang berbeda, kita akan dibantu dengan sebuah fungsi `time_series_cv()` dari `library(modeltime.resample)`. Pada fungsi tersebut nantinya akan ada 5 parameter yang bisa diisi, yaitu:
+
+- `data`: Data frame yang ingin digunakan.
+- `assess`: Rentan waktu untuk data validasi.
+- `initial`: Rentan waktu untuk data pembelajaran.
+- `skip`: Jarak waktu antara setiap pembagian data pembelajaran dan data validasi.
+- `slice_limit`: Berapa banyak pembagian data akan dilakukan.
 
 ```{r}
 resamples_tscv <- time_series_cv(
@@ -142,7 +150,7 @@ resamples_tscv <- time_series_cv(
 )
 ```
 
-Agar mendapatkan gambaran yang lebih jelas lagi, kita dapat melihat bagaimana hasil dari metode <i>Cross Validation</i> dalam melakukan pembagian data menjadi ke 4 kurun waktu yang berbeda untuk setiap data pembelajaran dan data validasinya dari visualisasi di bawah ini.
+Agar mendapatkan gambaran yang lebih jelas lagi bagaimana fungsi `time_series_cv()` bekerja, kita dapat melihat bagaimana hasil dari metode <i>Cross Validation</i> dalam melakukan pembagian data menjadi ke 4 kurun waktu yang berbeda untuk setiap data pembelajaran dan data validasinya dari visualisasi di bawah ini.
 
 ```{r}
 resamples_tscv %>%
@@ -155,67 +163,88 @@ resamples_tscv %>%
 
 ## Machine Learning Model
 
+Dengan menggunakan framework `modeltime`, kita diberikan kebebasan untuk menggunakan berbagai macam model <i>time series forecasting</i> yang dapat disesuaikan dengan kebutuhan. Selain itu framework `modeltime` akan terus melakukan pengembangan <i>ecosystem</i> jadinya akan selalu ada model baru yang dapat kita manfaatkan kedepannya. 
+
+Pada kesempatan kali ini kita akan mencoba untuk membuat tiga model terlebih dahulu, yaitu ARIMA, Exponential Smooting dan Phropet.
+
+- <b>ARIMA</b>
+
+Auto Regressive Integrated Moving Average atau ARIMA, merupakan sebuah model <i>time series forecasting</i> yang cukup klasik untuk digunakan untuk menghadapi data deret waktu yang tidak memiliki pola musiman. 
+
+Akan tetapi salah satu kelemahan dari model ARIMA adalah model tersebut tidak bisa digunakan jika data yang kita gunakan belum stasioner dan berdasarkan eksplorasi data yang sudah dilakukan, data yang kita gunakan masih belum stasioner. Bentuk data yang masih stasioner dapat ditanggulangi dengan melakukan <i>differencing</i>. Dengan membuat model ARIMA berdasarkan framework dari `modeltime`, kita tidak perlu melakukan <i>differencing</i> secara terpisah karena pada fungsi yang akan kita gunakan akan melakukan <i>differencing</i> jika data yang digunakan masih belum stasioner.
+
+Fungsi yang akan kita gunakan dalam membuat model ARIMA, yaitu
+
+- `arima_reg()`: Fungsi ini digunakan untuk membuat model ARIMA dari framework `modeltime`.
+- `set_engine()`: Fungsi ini kita gunakan untuk mengatur bagaiama model ARIMA tersebut akan dibuat.
+- `fit()`: Fungsi ini kita gunakan untuk memberitahu objek data dan kolom apa yang akan digunakan sebagai prediktor dan sebagai target variabel.
+
 ```{r}
-model_fit_arima_no_boost <- arima_reg() %>%
+model_fit_arima <- arima_reg() %>%
     set_engine(engine = "auto_arima") %>% 
-    fit(U.S..Crude.Oil ~ Month, data = crude_oil)
+    fit(formula = U.S..Crude.Oil ~ Month, 
+        data = crude_oil_clean)
+
+model_fit_arima
 ```
 
-```{r}
-model_fit_arima_boosted <- arima_boost(
-    min_n = 2,
-    learn_rate = 0.015
-) %>%
-    set_engine(engine = "auto_arima_xgboost") %>%
-    fit(U.S..Crude.Oil ~ Month + as.numeric(Month) + factor(month(Month, label = FALSE), ordered = F),
-        data = crude_oil)
-```
+- <b>ETS</b>
 
+Model kedua yang akan kita buat adalah Exponential Smoothing. Exponential Smoothing merupakan sebuah model yang 
 
-```{r}
-model_fit_prophet <- prophet_reg() %>%
-    set_engine(engine = "prophet") %>%
-    fit(U.S..Crude.Oil ~ Month, data = crude_oil)
-```
+Fungsi yang akan kita gunakan dalam membuat model Exponential Smoothing, yaitu
+
+- `exp_smoothing()`: Fungsi ini digunakan untuk membuat model Exponential Smoothing dari framework `modeltime`.
+- `set_engine()`: Fungsi ini kita gunakan untuk mengatur bagaiama model Exponential Smoothing tersebut akan dibuat.
+- `fit()`: Fungsi ini kita gunakan untuk memberitahu objek data dan kolom apa yang akan digunakan sebagai prediktor dan sebagai target variabel.
 
 ```{r}
 model_fit_ets <- exp_smoothing() %>%
     set_engine(engine = "ets") %>% 
-    fit(U.S..Crude.Oil ~ Month, data = crude_oil)
+    fit(formula = U.S..Crude.Oil ~ Month, 
+        data = crude_oil_clean)
+
+model_fit_ets
 ```
+
+- <b>Phrophet</b>
+
+
+Fungsi yang akan kita gunakan dalam membuat model prhophet, yaitu
+
+- `prophet_reg()`: Fungsi ini digunakan untuk membuat model prhophet dari framework `modeltime`.
+- `set_engine()`: Fungsi ini kita gunakan untuk mengatur bagaiama model prhophet tersebut akan dibuat.
+- `fit()`: Fungsi ini kita gunakan untuk memberitahu objek data dan kolom apa yang akan digunakan sebagai prediktor dan sebagai target variabel.
 
 ```{r}
-model_fit_lm <- linear_reg() %>%
-    set_engine("lm") %>%
-    fit(U.S..Crude.Oil ~ as.numeric(Month) + factor(month(Month, label = FALSE), ordered = FALSE),
-        data = crude_oil)
-```
+model_fit_prophet <- prophet_reg() %>%
+    set_engine(engine = "prophet") %>%
+    fit(formula = U.S..Crude.Oil ~ Month, 
+        data = crude_oil_clean)
 
+model_fit_prophet
+```
 
 ## Penggabungan Machine Learning Model
 
 ```{r}
 models_tbl <- modeltime_table(
     model_fit_arima_no_boost,
-    model_fit_arima_boosted,
     model_fit_prophet,
-    model_fit_ets,
-    model_fit_lm
+    model_fit_ets
 )
 
 models_tbl
 ```
 
+
 ```{r}
 resamples_fitted <- models_tbl %>%
-    modeltime_fit_resamples(
-        resamples = resamples_tscv,
-        control   = control_resamples(verbose = FALSE)
-    )
+    modeltime_fit_resamples(resamples = resamples_tscv,
+                            control = control_resamples(verbose = FALSE))
 
 resamples_fitted
 ```
-
 
 ## Prediksi & Evaluasi
 
@@ -228,6 +257,7 @@ resamples_fitted %>%
     )
 ```
 
+
 ```{r}
 resamples_fitted %>%
     modeltime_resample_accuracy() %>%
@@ -239,14 +269,12 @@ resamples_fitted %>%
 
 ```{r}
 refit_tbl <- resamples_fitted %>%
-    modeltime_refit(data = crude_oil)
+    modeltime_refit(data = crude_oil_clean)
 
 refit_tbl %>%
-    modeltime_forecast(h = "3 years", actual_data = crude_oil) %>%
-    plot_modeltime_forecast(
-      .legend_max_width = 25, # For mobile screens
-      .interactive      = TRUE
-    )
+    modeltime_forecast(h = "1 years", actual_data = crude_oil_clean) %>%
+    plot_modeltime_forecast(.legend_max_width = 25, 
+                            .interactive = TRUE)
 ```
 
 
@@ -260,7 +288,8 @@ refit_tbl %>%
 
 1. [Getting Started With Modeltime](https://business-science.github.io/modeltime/articles/getting-started-with-modeltime.html)
 2. [Getting Started With Modeltime Resample](https://business-science.github.io/modeltime.resample/articles/getting-started.html)
-
+3. [Introduction to ARIMA: nonseasonal models](https://people.duke.edu/~rnau/411arim.htm)
+4. [Modeltime Ecosystem Roadmap: New Algorithms & Models](https://github.com/business-science/modeltime/issues/5)
 
 
 
