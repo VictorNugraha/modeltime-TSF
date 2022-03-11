@@ -45,7 +45,7 @@ Selain itu, `modeltime` menyediakan sebuah <i>workflow</i> yang dapat kita manfa
 * <b>Tahapan 2 - <i>Cross Validation</i></b>: Tahapan kedua yang harus dilakukan adalah memisahkan data kita menjadi data pembelajaran dan data evaluasi, proses pemisahan data tersebut nantinya bisa dibantu oleh package `modeltime.resample` yang masih menjadi keluarga dari `modeltime`. 
 * <b>Tahapan 3 - Mempersiapkan <i>Model Machine Learning</i></b>: Tahapan ketiga adalah tahapan dimana kita akan membuat <i>model machine learning time series</i>. Dikarenakan `modeltime` memiliki berbagai macam model yang dapat kita gunakan, tentu saja kita dapat membuat beberapa model sekaligus.
 * <b>Tahapan 4 - Menggabungkan Model Ke Sebuah Tabel</b>: Jika kita membuat beberapa model sekaligus, kita dapat menggabungkan beberapa model tersebut ke sebuah tabel agar lebih rapi dan lebih mudah untuk dibandingkan pada tahapan berikutnya.
-* <b>Tahapan 5 - Prediksi & Evaluasi</b>: Tahapan selanjutnya adalah melakukan prediksi terhadap data evaluasi dan melakukan evaluasai terhadap hasil prediksinya.
+* <b>Tahapan 5 - Pelatihan & Evaluasi</b>: Tahapan selanjutnya adalah melakukan prediksi terhadap data evaluasi dan melakukan evaluasai terhadap hasil prediksinya.
 * <b>Tahapan 6 - Prediksi Masa Depan</b>: Tahapan terakhir yang dapat kita lakukan adalah memilih salah satu model yang paling baik dari hasil evaluasi yang sudah dilakukan dan mengimplementasikan model tersebut untuk memprediksi masa depan.
 
 Tentu saja ebagai seorang <i>Data Scientist</i> kita akan sangat terbantu karena kita sudah memiliki sebuah <i>framework</i> yang memungkinkan kita untuk bekerja lebih cepat dan rapi. 
@@ -62,7 +62,6 @@ library(timetk)
 library(tidymodels)
 library(modeltime)
 library(modeltime.resample)
-library(smooth)
 ```
 
 # Modeltime Workflow
@@ -165,7 +164,7 @@ resamples_tscv %>%
 
 Dengan menggunakan framework `modeltime`, kita diberikan kebebasan untuk menggunakan berbagai macam model <i>time series forecasting</i> yang dapat disesuaikan dengan kebutuhan. Selain itu framework `modeltime` akan terus melakukan pengembangan <i>ecosystem</i> jadinya akan selalu ada model baru yang dapat kita manfaatkan kedepannya. 
 
-Pada kesempatan kali ini kita akan mencoba untuk membuat tiga model terlebih dahulu, yaitu ARIMA, Exponential Smooting dan Phropet.
+Pada kesempatan kali ini kita akan mencoba untuk membuat tiga model terlebih dahulu, yaitu ARIMA, Exponential Smooting dan Prophet.
 
 - <b>ARIMA</b>
 
@@ -190,7 +189,9 @@ model_fit_arima
 
 - <b>ETS</b>
 
-Model kedua yang akan kita buat adalah Exponential Smoothing. Exponential Smoothing merupakan sebuah model yang 
+Model kedua yang akan kita buat adalah Exponential Smoothing. Exponential Smoothing merupakan sebuah model yang cukup serbaguna karena pada model ini bisa digunakan untuk memprediksi data yang memiiki pola arah ataupun pola musiman ataupun tidak memiliki pola sama sekali. Dikarenakan kemampuan model ini yang dapat memprediksi untuk berbagai macam kasus deret waktu, model Exponential Smoothing merupakan salah satu model yang cukup populer untuk digunakan.
+
+Sama seperti model ARIMA, pada model Exponential Smoothing yang sudah dikembangkan oleh framework dari `modeltime`, kita tidak perlu repot-repot dalam menentukan apakah data kita memiliki pola atau tidak karena pada fungsi yang akan kita gunakan nanti sudah terdapat sebuah fungsi yang akan membantu kita dalam menentukan hal tersebut.
 
 Fungsi yang akan kita gunakan dalam membuat model Exponential Smoothing, yaitu
 
@@ -207,8 +208,9 @@ model_fit_ets <- exp_smoothing() %>%
 model_fit_ets
 ```
 
-- <b>Phrophet</b>
+- <b>Prophet</b>
 
+Terakhir, model ini merupakan model <i>time series forecasting</i> yang dikebambangkan oleh Facebook. Salah satu kelebihan dari model prophet adalah untuk menghadapi data deret waktu yang memiliki pola musiman yang kuat. Walaupun kelebihan dari model prophet adalah kemampuannya untuk menangkap pola musiman, bukan berarti model tersebut tidak dapat digunakan untuk data deret waktu yang memiliki polan arah.
 
 Fungsi yang akan kita gunakan dalam membuat model prhophet, yaitu
 
@@ -227,26 +229,35 @@ model_fit_prophet
 
 ## Penggabungan Machine Learning Model
 
+Tahap selanjutnya yang bisa kita lakukan adalah menggabungkan ketiga model yang sudah dibuat menjadi satu. Tujuan penggabungan dari ketiga model tersebut adalah untuk mempermudah beberapa proses selanjutnya yaitu proses pelatihan model, evaluasi model dan prediksi masa depan karena dengan menggabungkan semua model menjadi satu kesatuan, kita hanya perlu melakukan pelatihan model, evaluasi model dan prediksi sebanyak satu kali saja. 
+
+Untuk menggabungkan beberapa model menjadi satu kesatuan, kita dapat memanfaatkan sebuah fungsi yang bernama `modeltime_table()`.
+
 ```{r}
-models_tbl <- modeltime_table(
-    model_fit_arima_no_boost,
-    model_fit_prophet,
-    model_fit_ets
-)
+models_tbl <- modeltime_table(model_fit_arima_no_boost,
+                              model_fit_prophet,
+                              model_fit_ets)
 
 models_tbl
 ```
 
+## Pelatihan & Evaluasi Model
+
+Untuk melakukan pelatihan model yang sudah dibuat dengan data yang sudah kita persiapkan pada tahapan <i>cross validation</i>, kita dapat memanfaatkan sebuah fungsi `modeltime_fit_resamples()`. Selain untuk melatih model, fungsi tersebut juga akan melakukan perhitungan error yang terjadi pada data validasi yang sudah dipersiapkan.
+
+- <b>Pelatihan Model</b>
+
+Nantinya fungsi `modeltime_fit_resamples()` bisa langsung melatih setiap model yang dibuat berdasarkan pembagian data yang sudah dibagi pada tahapan <i>cross validation</i> dengan menambahkan sebuah parameter yaitu `resamples`, parameter tersebut nantinya bisa kita isi dengan nama objek data hasil <i>cross validation</i>
 
 ```{r}
 resamples_fitted <- models_tbl %>%
-    modeltime_fit_resamples(resamples = resamples_tscv,
-                            control = control_resamples(verbose = FALSE))
+    modeltime_fit_resamples(resamples = resamples_tscv)
 
 resamples_fitted
 ```
+- <b>Evaluasi Model</b>
 
-## Prediksi & Evaluasi
+Seperti yang sempat disampaikan sebelumnya, fungsi `modeltime_fit_resamples()` juga akan melakukan perhitungan error yang dapat kita manfaatkan untuk evaluasi ketiga model yang sudah kita buat. Agar kita dapat melihat hasil perhitungan error untuk setiap kurun waktu dari ketiga model, kita akan memanfaatkan sebuah fungsi yang bernama `plot_modeltime_resamples()`. Fungsi tersebut nantinya akan menghasilkan sebuah plot interaktif yang 
 
 ```{r}
 resamples_fitted %>%
@@ -261,7 +272,8 @@ resamples_fitted %>%
 ```{r}
 resamples_fitted %>%
     modeltime_resample_accuracy() %>%
-    table_modeltime_accuracy(.interactive = FALSE)
+    table_modeltime_accuracy(.title = "Tabel Evaluasi", 
+                             .interactive = FALSE)
 ```
 
 
