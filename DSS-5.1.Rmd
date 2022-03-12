@@ -46,7 +46,7 @@ Selain itu, `modeltime` menyediakan sebuah <i>workflow</i> yang dapat kita manfa
 * <b>Tahapan 3 - Mempersiapkan <i>Model Machine Learning</i></b>: Tahapan ketiga adalah tahapan dimana kita akan membuat <i>model machine learning time series</i>. Dikarenakan `modeltime` memiliki berbagai macam model yang dapat kita gunakan, tentu saja kita dapat membuat beberapa model sekaligus.
 * <b>Tahapan 4 - Menggabungkan Model Ke Sebuah Tabel</b>: Jika kita membuat beberapa model sekaligus, kita dapat menggabungkan beberapa model tersebut ke sebuah tabel agar lebih rapi dan lebih mudah untuk dibandingkan pada tahapan berikutnya.
 * <b>Tahapan 5 - Pelatihan & Evaluasi</b>: Tahapan selanjutnya adalah melakukan prediksi terhadap data evaluasi dan melakukan evaluasai terhadap hasil prediksinya.
-* <b>Tahapan 6 - Prediksi Masa Depan</b>: Tahapan terakhir yang dapat kita lakukan adalah memilih salah satu model yang paling baik dari hasil evaluasi yang sudah dilakukan dan mengimplementasikan model tersebut untuk memprediksi masa depan.
+* <b>Tahapan 6 - Prediksi Masa Depan</b>: Tahapan terakhir yang dapat kita lakukan adalah memprediksi masa depan.
 
 Tentu saja ebagai seorang <i>Data Scientist</i> kita akan sangat terbantu karena kita sudah memiliki sebuah <i>framework</i> yang memungkinkan kita untuk bekerja lebih cepat dan rapi. 
 
@@ -79,7 +79,7 @@ crude_oil <- read.csv("data_input/U.S._crude_oil_production.csv")
 crude_oil 
 ```
 
-Dari total 36 kolom yang terdapat pada dataframe di atas, kita hanya akan menggunakan 2 kolom saja yaitu kolom `Month` dan `U.S..Crude.Oil`. Kolom `Month` berisikan informasi tanggal setiap awal bulan dari Juni 2008 sampai September 2018 dan pada kolom `U.S..Crude.Oil` berisikan informasi jumlah hasil tambang minyak bumi dari setiap daerah di Amerika Serikat dalam satuan 1000 barel, jumlah hasil tambang minyak bumi pada kolom `U.S..Crude.Oil` berdasarkan penjumlahan dari 34 kolom lainnya. 
+Dari total 36 kolom yang terdapat pada dataframe di atas, kita hanya akan menggunakan 2 kolom saja yaitu kolom `Month` dan `U.S..Crude.Oil`. Kolom `Month` berisikan informasi tanggal setiap awal bulan dari Juni 2008 sampai Juni 2018 dan pada kolom `U.S..Crude.Oil` berisikan informasi jumlah hasil tambang minyak bumi dari setiap daerah di Amerika Serikat dalam satuan 1000 barel, jumlah hasil tambang minyak bumi pada kolom `U.S..Crude.Oil` berdasarkan penjumlahan dari 34 kolom lainnya. 
 
 ### Pembersihan Data
 
@@ -112,7 +112,7 @@ Hasil dari visualisasi tersebut nantinya akan sangat membantu kita untuk mengeta
 
 Identifkasi mengenai kategori data pada kasus deret waktu merupakan hal yang penting karena akan menentukan pendekatan yang akan digunakan nantinya. 
 
-```{r}
+```{r, fig.width=8}
 crude_oil_clean %>%
   plot_time_series(.date_var = Month, 
                    .value = U.S..Crude.Oil, 
@@ -151,7 +151,7 @@ resamples_tscv <- time_series_cv(
 
 Agar mendapatkan gambaran yang lebih jelas lagi bagaimana fungsi `time_series_cv()` bekerja, kita dapat melihat bagaimana hasil dari metode <i>Cross Validation</i> dalam melakukan pembagian data menjadi ke 4 kurun waktu yang berbeda untuk setiap data pembelajaran dan data validasinya dari visualisasi di bawah ini.
 
-```{r}
+```{r, fig.width=8}
 resamples_tscv %>%
     tk_time_series_cv_plan() %>%
     plot_time_series_cv_plan(.date_var = Month, 
@@ -234,7 +234,7 @@ Tahap selanjutnya yang bisa kita lakukan adalah menggabungkan ketiga model yang 
 Untuk menggabungkan beberapa model menjadi satu kesatuan, kita dapat memanfaatkan sebuah fungsi yang bernama `modeltime_table()`.
 
 ```{r}
-models_tbl <- modeltime_table(model_fit_arima_no_boost,
+models_tbl <- modeltime_table(model_fit_arima,
                               model_fit_prophet,
                               model_fit_ets)
 
@@ -257,36 +257,53 @@ resamples_fitted
 ```
 - <b>Evaluasi Model</b>
 
-Seperti yang sempat disampaikan sebelumnya, fungsi `modeltime_fit_resamples()` juga akan melakukan perhitungan error yang dapat kita manfaatkan untuk evaluasi ketiga model yang sudah kita buat. Agar kita dapat melihat hasil perhitungan error untuk setiap kurun waktu dari ketiga model, kita akan memanfaatkan sebuah fungsi yang bernama `plot_modeltime_resamples()`. Fungsi tersebut nantinya akan menghasilkan sebuah plot interaktif yang 
+Seperti yang sempat disampaikan sebelumnya, fungsi `modeltime_fit_resamples()` juga akan melakukan perhitungan error yang dapat kita manfaatkan untuk evaluasi ketiga model yang sudah kita buat. Untuk dapat melihat hasil perhitungan error, kita akan memanfaatkan fungsi `modeltime_resample_accuracy()` dan `table_modeltime_accuracy()`. Nantinya kedua fungsi tersebut akan membuat sebuah tabel evaluasi yang berisikan 6 perhitungan evaluasi error. Akan tetapi hasil dari tabel evaluasi yang akan kita buat tidak langsung menampilkan perhitungan evaluasi error untuk setiap pembagian data, melainkan hanya untuk pembagian data yang paling akhir saja atau untuk kurun waktu dari Agustus 2009 sampai Mei 2015.
 
-```{r}
-resamples_fitted %>%
-    plot_modeltime_resamples(
-      .point_size  = 3, 
-      .point_alpha = 0.8,
-      .interactive = TRUE
-    )
-```
-
-
-```{r}
+```{r, fig.width=8}
 resamples_fitted %>%
     modeltime_resample_accuracy() %>%
     table_modeltime_accuracy(.title = "Tabel Evaluasi", 
                              .interactive = FALSE)
 ```
 
+Opsi lain untuk melihat evaluasi model adalah dengan menggunakan fungsi `plot_modeltime_resamples()`. Fungsi tersebut nantinya akan menghasilkan 6 plot interaktif, dimana setiap plot tersebut akan mewakili sebuah perhitungan error untuk setiap pembagian data validasinya, jadinya kita dapat langsung melihat secara menyeluruh bagaimana peforma model yang dibuat pada 4 data yang berbeda. 
+
+```{r, fig.width=8}
+resamples_fitted %>%
+    plot_modeltime_resamples(.interactive = TRUE)
+```
+
+Dari plot evaluasi error di atas kita dapat menarik kesimpulan bahwa, model ARIMA dan Exponential Smoothing memiliki error yang relatif stabil untuk setiap 4 rentang waktu yang ada, sedangkan untuk nilai error yang dihasilkan oleh model prophet dapat disimpulkan kurang stabil. Selain itu, kita juga dapat menyimpulkan bahwa model ARIMA adalah model yang memiliki rata-rata error yang paling kecil hampir di setiap matriks evaluasi error yang digunakan. 
 
 ## Prediksi Masa Depan
+
+Pada tahapan terakhir ini, kita akan melakukan prediksi selama satu tahun kedepan untuk melihat berapa banyak minyak bumi yang dapat ditambang oleh Amerika Serikat setiap bulannya. 
+
+Untuk melakukan prediksi, pertama-tama kita harus melatih ulang model yang sudah dilatih sebelumnya pada objek `resamples_fitted` ke keseluruhan data karena ketiga model yang kita sudah latih sebelumnya masih menggunakan data latih dengan deret waktu yang tidak utuh, sedangkan untuk mendapatkan hasil prediksi masa depan yang lebih akurat kita akan melatih ulang model kita dengan keseluruhan data deret waktu yang ada. Fungsi yang dapat kita gunakan pada proses ini adalah fungsi `modeltime_refit()`.
 
 ```{r}
 refit_tbl <- resamples_fitted %>%
     modeltime_refit(data = crude_oil_clean)
+```
 
-refit_tbl %>%
-    modeltime_forecast(h = "1 years", actual_data = crude_oil_clean) %>%
-    plot_modeltime_forecast(.legend_max_width = 25, 
-                            .interactive = TRUE)
+Setelah melatih ulang model, kita akan melakukan prediksi masa depan dengan menggunakan fungsi `modeltime_forecast()` . Pada fungsi tersebut nantinya akan ada 2 parameter yang bisa diisi, yaitu:
+
+- `h`: Seberapa jauh prediksi yang akan dilakukan.
+- `actual_data`: Objek data yang ingin diprediksi.
+
+```{r}
+forecast <- refit_tbl %>%
+    modeltime_forecast(h = "1 years", 
+                       actual_data = crude_oil_clean) 
+
+forecast 
+```
+
+Hasil prediksi dari fungsi `modeltime_forecast()` akan menghasilkan sebuah dataframe dan untuk melihat hasil prediksinya kita dapat melihat dari kolom `.value`. Opsi lain yang dapat kita lakukan untuk melihat hasil prediksi dari ketiga model yang kita buat adalah dengan membuat sebuah visulasisi dengan memanfaatkan fungsi `plot_modeltime_forecast()`.
+
+```{r, fig.width=8}
+forecast %>%
+    plot_modeltime_forecast(.interactive = TRUE)
 ```
 
 
