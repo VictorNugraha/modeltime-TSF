@@ -162,7 +162,7 @@ resamples_tscv %>%
 
 ## Machine Learning Model
 
-Dengan menggunakan framework `modeltime`, kita diberikan kebebasan untuk menggunakan berbagai macam model <i>time series forecasting</i> yang dapat disesuaikan dengan kebutuhan. Selain itu framework `modeltime` akan terus melakukan pengembangan <i>ecosystem</i> jadinya akan selalu ada model baru yang dapat kita manfaatkan kedepannya. 
+Dengan menggunakan <i>framework</i> `modeltime`, kita diberikan kebebasan untuk menggunakan berbagai macam model <i>time series forecasting</i> yang dapat disesuaikan dengan kebutuhan. Selain itu <i>framework</i> `modeltime` akan terus melakukan pengembangan <i>ecosystem</i> jadinya akan selalu ada model baru yang dapat kita manfaatkan kedepannya. 
 
 Pada kesempatan kali ini kita akan mencoba untuk membuat tiga model terlebih dahulu, yaitu ARIMA, Exponential Smooting dan Prophet.
 
@@ -170,11 +170,11 @@ Pada kesempatan kali ini kita akan mencoba untuk membuat tiga model terlebih dah
 
 Auto Regressive Integrated Moving Average atau ARIMA, merupakan sebuah model <i>time series forecasting</i> yang cukup klasik untuk digunakan untuk menghadapi data deret waktu yang tidak memiliki pola musiman. 
 
-Akan tetapi salah satu kelemahan dari model ARIMA adalah model tersebut tidak bisa digunakan jika data yang kita gunakan belum stasioner dan berdasarkan eksplorasi data yang sudah dilakukan, data yang kita gunakan masih belum stasioner. Bentuk data yang masih stasioner dapat ditanggulangi dengan melakukan <i>differencing</i>. Dengan membuat model ARIMA berdasarkan framework dari `modeltime`, kita tidak perlu melakukan <i>differencing</i> secara terpisah karena pada fungsi yang akan kita gunakan akan melakukan <i>differencing</i> jika data yang digunakan masih belum stasioner.
+Akan tetapi salah satu kelemahan dari model ARIMA adalah model tersebut tidak bisa digunakan jika data yang kita gunakan belum stasioner dan berdasarkan eksplorasi data yang sudah dilakukan, data yang kita gunakan masih belum stasioner. Bentuk data yang masih stasioner dapat ditanggulangi dengan melakukan <i>differencing</i>. Dengan membuat model ARIMA berdasarkan <i>framework</i> dari `modeltime`, kita tidak perlu melakukan <i>differencing</i> secara terpisah karena pada fungsi yang akan kita gunakan akan melakukan <i>differencing</i> jika data yang digunakan masih belum stasioner.
 
 Fungsi yang akan kita gunakan dalam membuat model ARIMA, yaitu
 
-- `arima_reg()`: Fungsi ini digunakan untuk membuat model ARIMA dari framework `modeltime`.
+- `arima_reg()`: Fungsi ini digunakan untuk membuat model ARIMA dari <i>framework</i> `modeltime`.
 - `set_engine()`: Fungsi ini kita gunakan untuk mengatur bagaiama model ARIMA tersebut akan dibuat.
 - `fit()`: Fungsi ini kita gunakan untuk memberitahu objek data dan kolom apa yang akan digunakan sebagai prediktor dan sebagai target variabel.
 
@@ -191,11 +191,11 @@ model_fit_arima
 
 Model kedua yang akan kita buat adalah Exponential Smoothing. Exponential Smoothing merupakan sebuah model yang cukup serbaguna karena pada model ini bisa digunakan untuk memprediksi data yang memiiki pola arah ataupun pola musiman ataupun tidak memiliki pola sama sekali. Dikarenakan kemampuan model ini yang dapat memprediksi untuk berbagai macam kasus deret waktu, model Exponential Smoothing merupakan salah satu model yang cukup populer untuk digunakan.
 
-Sama seperti model ARIMA, pada model Exponential Smoothing yang sudah dikembangkan oleh framework dari `modeltime`, kita tidak perlu repot-repot dalam menentukan apakah data kita memiliki pola atau tidak karena pada fungsi yang akan kita gunakan nanti sudah terdapat sebuah fungsi yang akan membantu kita dalam menentukan hal tersebut.
+Sama seperti model ARIMA, pada model Exponential Smoothing yang sudah dikembangkan oleh <i>framework</i> dari `modeltime`, kita tidak perlu repot-repot dalam menentukan apakah data kita memiliki pola atau tidak karena pada fungsi yang akan kita gunakan nanti sudah terdapat sebuah fungsi yang akan membantu kita dalam menentukan hal tersebut.
 
 Fungsi yang akan kita gunakan dalam membuat model Exponential Smoothing, yaitu
 
-- `exp_smoothing()`: Fungsi ini digunakan untuk membuat model Exponential Smoothing dari framework `modeltime`.
+- `exp_smoothing()`: Fungsi ini digunakan untuk membuat model Exponential Smoothing dari <i>framework</i> `modeltime`.
 - `set_engine()`: Fungsi ini kita gunakan untuk mengatur bagaiama model Exponential Smoothing tersebut akan dibuat.
 - `fit()`: Fungsi ini kita gunakan untuk memberitahu objek data dan kolom apa yang akan digunakan sebagai prediktor dan sebagai target variabel.
 
@@ -214,7 +214,7 @@ Terakhir, model ini merupakan model <i>time series forecasting</i> yang dikebamb
 
 Fungsi yang akan kita gunakan dalam membuat model prhophet, yaitu
 
-- `prophet_reg()`: Fungsi ini digunakan untuk membuat model prhophet dari framework `modeltime`.
+- `prophet_reg()`: Fungsi ini digunakan untuk membuat model prhophet dari <i>framework</i> `modeltime`.
 - `set_engine()`: Fungsi ini kita gunakan untuk mengatur bagaiama model prhophet tersebut akan dibuat.
 - `fit()`: Fungsi ini kita gunakan untuk memberitahu objek data dan kolom apa yang akan digunakan sebagai prediktor dan sebagai target variabel.
 
@@ -306,12 +306,19 @@ forecast %>%
     plot_modeltime_forecast(.interactive = TRUE)
 ```
 
+Dari visualisasi yang dihasilkan, kita dapat melihat bahwa model ARIMA dan Exponential Smoothing menghasilkan prediski yang memiliki kenaikan konstan dari bulan ke bulannya tanpa adanya penurunan sama sekali. Prediksi yang membuat garis lurus pada model ARIMA dan Exponential Smoothing dapat terjadi dikarenakan kedua model tersebut menggunakan parameter <i>auto</i> yang menghasilkan <i>hyperparameter</i> yang tidak memperhitungkan pola musiman dan hasil tersebut cukup sering terjadi pada model <i>time sereis forecasting</i> yang menggunakan parameter <i>auto</i>.
 
+Sedangkan untuk model prophet, model prophet menghasilkan prediksi yang tidak memiliki kenaikan konstan di setiap bulannya. Akan tetapi pada awal prediksi, model prophet langung memprediksi hasil tambang minyak bumi di Amerika Serikat pada bulan Juli 2018 sebesar 767 ribu barel.
+
+Hasil prediksi yang dihasilkan tentu saja tidak 100% akurat, untuk mengetahui seberapa besar error yang mungkin terjadi kita dapat memanfaatkan rata-rata nilai error pada tahapan evaluasi model sebelumnya.
+
+<i>Disclaimer</i>: Pada tahapan prediksi model tidak harus menggunakan keseluruhan model yang dibuat, kita hanya perlu menggunakan satu model saja yang dirasa memiliki peforma paling baik.
 
 # Kesimpulan
 
+Di sini kita dapat menarik kesimpulan bahwa, dengan adanya <i>framework</i> `modeltime` akan sangat membantu dalam menghadapi data deret waktu karena `modeltime` sudah menyediakan sebuah alur kerja yang dapat kita ikuti mulai dari untuk mendapatkan hasil prediksi yang terbaik dari berbabgai macam model <i>time series forecasting</i> tanpa harus menggunakan berbagai macam fungsi dan <i>package</i> yang berebeda-beda.
 
-
+Dalam kasus ini, 
 
 <b>Referensi:</b>
 
