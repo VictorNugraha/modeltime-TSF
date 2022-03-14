@@ -20,14 +20,14 @@ body {text-align: justify}
 knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE,
                       warning = FALSE,
-                      fig.width = 12,
+                      fig.width = 8,
                       fig.height = 4,
                       fig.align = "center")
 ```
 
 # Pendahuluan
 
-<i>Time Series Forecasting</i> merupakan salah satu model dari <i>Supervised Machine Learning</i>, yang memiliki kemampuan untuk memprediksi sebuah nilai di masa depan berdasarkan data historis khususnya data-data yang berhubungan dengan waktu. 
+<i>Time Series Forecasting</i> merupakan salah satu model dari <i>Supervised Machine Learning</i>, yang memiliki kemampuan untuk memprediksi sebuah nilai pada masa depan berdasarkan data historis khususnya data-data yang berhubungan dengan waktu. 
 
 Pada bahasa pemrograman R sendiri, sudah banyak sekali <i>framework</i> ataupun <i>packages</i> yang dapat kita manfaatkan untuk membuat sebuah model <i>time series forecasting</i>. Dari sekian banyak framework dan packages, pada artikel ini kita akan fokus untuk melakukan eksplorasi terhadap sebuah <i>framework</i> yang masih menjadi keluarga dari `Tidymodels` yaitu <i>framework</i> `modeltime` dan sebuah package tambahan yaitu `modeltime.resample`.
 
@@ -39,7 +39,7 @@ knitr::include_graphics("img/framework.png")
 
 Salah satu alasan utama kenapa fokus dari artikel ini membahas `modeltime` karena `modeltime` adalah sebuah <i>framework</i> yang berisikan beberapa <i>model machine learning time series</i>, dari yang cukup klasik seperti <i>ARIMA</i> dan <i>Exponential Smooting</i>, sampai dengan yang cukup baru seperti <i>Facebook’s Prophet</i> dan <i>parnship</i>. 
 
-Selain itu, `modeltime` menyediakan sebuah <i>workflow</i> yang dapat kita manfaatkan sebagai panduan. Berikut adalah urutak <i>workflow</i> yang dapat kita ikuti:
+Selain itu, `modeltime` menyediakan sebuah <i>workflow</i> yang dapat kita manfaatkan sebagai panduan. Berikut adalah urutan <i>workflow</i> yang dapat kita ikuti:
 
 * <b>Tahapan 1 - Persiapan Data</b>: Pada tahapan pertama ini akan mencangkup proses pengumpulan data, pembersihan data dan eksplorasi terhadap data kita.
 * <b>Tahapan 2 - <i>Cross Validation</i></b>: Tahapan kedua yang harus dilakukan adalah memisahkan data kita menjadi data pembelajaran dan data evaluasi, proses pemisahan data tersebut nantinya bisa dibantu oleh package `modeltime.resample` yang masih menjadi keluarga dari `modeltime`. 
@@ -48,7 +48,7 @@ Selain itu, `modeltime` menyediakan sebuah <i>workflow</i> yang dapat kita manfa
 * <b>Tahapan 5 - Pelatihan & Evaluasi</b>: Tahapan selanjutnya adalah melakukan prediksi terhadap data evaluasi dan melakukan evaluasai terhadap hasil prediksinya.
 * <b>Tahapan 6 - Prediksi Masa Depan</b>: Tahapan terakhir yang dapat kita lakukan adalah memprediksi masa depan.
 
-Tentu saja ebagai seorang <i>Data Scientist</i> kita akan sangat terbantu karena kita sudah memiliki sebuah <i>framework</i> yang memungkinkan kita untuk bekerja lebih cepat dan rapi. 
+Tentu saja sebagai seorang <i>Data Scientist</i> kita akan sangat terbantu karena kita sudah memiliki sebuah <i>framework</i> yang memungkinkan kita untuk bekerja lebih cepat dan rapi. 
 
 # Library
 
@@ -108,9 +108,9 @@ Dari hasil observasi di atas, kita mengetahi bahwa pada data kita tidak ada <i>m
 
 Untuk mempermudah tahapan eksplorasi data untuk kasus deret waktu, kita akan membuat sebuah visualisasi garis dengan menggunakan fungsi `plot_time_series` dari `library(timetk)`. 
 
-Hasil dari visualisasi tersebut nantinya akan sangat membantu kita untuk mengetahui apakah hasil tambang minyak bumi di Amerika Serikat memiliki sebuah pola arah atau pola musiman. Jika nantinya dari hasil visualisasi ternyata data deret waktu tidak memiliki pola arah atau pola musiman, maka dapat dikateogrikan sebagai data stasioner dan jika memiliki entah sebuah pola arah atau pola musiman, maka dapat dikategorikan sebagai data tidak stasioner.
+Hasil dari visualisasi tersebut nantinya akan sangat membantu kita untuk mengetahui apakah hasil tambang minyak bumi di Amerika Serikat memiliki sebuah pola arah atau pola musiman. Jika nantinya dari hasil visualisasi ternyata data deret waktu tidak memiliki pola arah atau pola musiman, maka dapat dikategorikan sebagai data stasioner dan jika memiliki entah sebuah pola arah atau pola musiman, maka dapat dikategorikan sebagai data tidak stasioner.
 
-Identifkasi mengenai kategori data pada kasus deret waktu merupakan hal yang penting karena akan menentukan pendekatan yang akan digunakan nantinya. 
+Identifikasi mengenai kategori data pada kasus deret waktu merupakan hal yang penting karena akan menentukan pendekatan yang akan digunakan nantinya. 
 
 ```{r, fig.width=8}
 crude_oil_clean %>%
@@ -125,13 +125,13 @@ crude_oil_clean %>%
                    .title = "Hasil Tambang Minyak Bumi Amerika Serikat (Juni 2008 - September 2018)")
 ```
 
-Dari hasil visualisasi di atas, kita bisa menarik kesimpulan bahwa data hasil tambang minyak bumi di Amerika Serikat tidak memiliki pola musiman tapi memiliki pola arah yang cenderung meingkat dari waktu ke waktu, maka dari itu data tersebut dapat dikategorikan sebagai data tidak stasioner. 
+Dari hasil visualisasi di atas, kita bisa menarik kesimpulan bahwa data hasil tambang minyak bumi di Amerika Serikat tidak memiliki pola musiman tapi memiliki pola arah yang cenderung meningkat dari waktu ke waktu, maka dari itu data tersebut dapat dikategorikan sebagai data tidak stasioner. 
 
 ## Cross Validation
 
 Langkah selanjutnya kita akan melakukan <i>cross validation</i> agar kita dapat mengevaluasi stabilitas model <i>time series forecasting</i> yang dibuat. Pada tahapan <i>cross validation</i> kali ini, kita tidak hanya membagi data pembelajaran dan data validasinya berdasarkan 1 kurun waktu saja melainkan akan dibagi ke 4 kurun waktu yang berbeda. Dengan dibaginya data pembelajaran dan data validasinya ke beberapa rentan waktu yang berbeda, kita bisa lebih yakin terhadap stabilitas model yang dibuat karena model tersebut tidak divalidasi sekali saja melainkan beberapa kali dengan kurun waktu yang berbeda-beda.
 
-Untuk membagi data kita menjadi ke 4 kurun waktu yang berbeda, kita akan dibantu dengan sebuah fungsi `time_series_cv()` dari `library(modeltime.resample)`. Pada fungsi tersebut nantinya akan ada 5 parameter yang bisa diisi, yaitu:
+Untuk membagi data kita ke 4 kurun waktu yang berbeda, kita akan dibantu dengan sebuah fungsi `time_series_cv()` dari `library(modeltime.resample)`. Pada fungsi tersebut nantinya akan ada 5 parameter yang bisa diisi, yaitu:
 
 - `data`: Data frame yang ingin digunakan.
 - `assess`: Rentan waktu untuk data validasi.
@@ -149,9 +149,9 @@ resamples_tscv <- time_series_cv(
 )
 ```
 
-Agar mendapatkan gambaran yang lebih jelas lagi bagaimana fungsi `time_series_cv()` bekerja, kita dapat melihat bagaimana hasil dari metode <i>Cross Validation</i> dalam melakukan pembagian data menjadi ke 4 kurun waktu yang berbeda untuk setiap data pembelajaran dan data validasinya dari visualisasi di bawah ini.
+Agar mendapatkan gambaran yang lebih jelas lagi bagaimana fungsi `time_series_cv()` bekerja, kita dapat melihat bagaimana hasil pembagian data ke 4 kurun waktu yang berbeda untuk setiap data pembelajaran dan data validasinya dari visualisasi di bawah ini.
 
-```{r, fig.width=8}
+```{r}
 resamples_tscv %>%
     tk_time_series_cv_plan() %>%
     plot_time_series_cv_plan(.date_var = Month, 
@@ -175,7 +175,7 @@ Akan tetapi salah satu kelemahan dari model ARIMA adalah model tersebut tidak bi
 Fungsi yang akan kita gunakan dalam membuat model ARIMA, yaitu
 
 - `arima_reg()`: Fungsi ini digunakan untuk membuat model ARIMA dari <i>framework</i> `modeltime`.
-- `set_engine()`: Fungsi ini kita gunakan untuk mengatur bagaiama model ARIMA tersebut akan dibuat.
+- `set_engine()`: Fungsi ini kita gunakan untuk mengatur bagaiama model prophet tersebut akan dibuat, jika kita ingin mesin yang mencari hasil <i>hyperparameter</i> untuk model prophet kita bisa mengisinya dengan `auto_arima`.
 - `fit()`: Fungsi ini kita gunakan untuk memberitahu objek data dan kolom apa yang akan digunakan sebagai prediktor dan sebagai target variabel.
 
 ```{r}
@@ -189,14 +189,14 @@ model_fit_arima
 
 - <b>ETS</b>
 
-Model kedua yang akan kita buat adalah Exponential Smoothing. Exponential Smoothing merupakan sebuah model yang cukup serbaguna karena pada model ini bisa digunakan untuk memprediksi data yang memiiki pola arah ataupun pola musiman ataupun tidak memiliki pola sama sekali. Dikarenakan kemampuan model ini yang dapat memprediksi untuk berbagai macam kasus deret waktu, model Exponential Smoothing merupakan salah satu model yang cukup populer untuk digunakan.
+Model kedua yang akan kita buat adalah Exponential Smoothing. Exponential Smoothing merupakan sebuah model yang cukup serbaguna karena pada model ini bisa digunakan untuk memprediksi data yang memiliki pola arah ataupun pola musiman ataupun tidak memiliki pola sama sekali. Dikarenakan kemampuan model ini yang dapat memprediksi untuk berbagai macam kasus deret waktu, model Exponential Smoothing merupakan salah satu model yang cukup populer untuk digunakan.
 
 Sama seperti model ARIMA, pada model Exponential Smoothing yang sudah dikembangkan oleh <i>framework</i> dari `modeltime`, kita tidak perlu repot-repot dalam menentukan apakah data kita memiliki pola atau tidak karena pada fungsi yang akan kita gunakan nanti sudah terdapat sebuah fungsi yang akan membantu kita dalam menentukan hal tersebut.
 
 Fungsi yang akan kita gunakan dalam membuat model Exponential Smoothing, yaitu
 
 - `exp_smoothing()`: Fungsi ini digunakan untuk membuat model Exponential Smoothing dari <i>framework</i> `modeltime`.
-- `set_engine()`: Fungsi ini kita gunakan untuk mengatur bagaiama model Exponential Smoothing tersebut akan dibuat.
+- `set_engine()`: Fungsi ini kita gunakan untuk mengatur bagaiama model prophet tersebut akan dibuat, jika kita ingin mesin yang mencari hasil <i>hyperparameter</i> untuk model prophet kita bisa mengisinya dengan `ets`.
 - `fit()`: Fungsi ini kita gunakan untuk memberitahu objek data dan kolom apa yang akan digunakan sebagai prediktor dan sebagai target variabel.
 
 ```{r}
@@ -210,12 +210,12 @@ model_fit_ets
 
 - <b>Prophet</b>
 
-Terakhir, model ini merupakan model <i>time series forecasting</i> yang dikebambangkan oleh Facebook. Salah satu kelebihan dari model prophet adalah untuk menghadapi data deret waktu yang memiliki pola musiman yang kuat. Walaupun kelebihan dari model prophet adalah kemampuannya untuk menangkap pola musiman, bukan berarti model tersebut tidak dapat digunakan untuk data deret waktu yang memiliki polan arah.
+Terakhir, model ini merupakan model <i>time series forecasting</i> yang dikembangkan oleh Facebook. Salah satu kelebihan dari model prophet adalah untuk menghadapi data deret waktu yang memiliki pola musiman yang kuat. Walaupun kelebihan dari model prophet adalah kemampuannya untuk menangkap pola musiman, bukan berarti model tersebut tidak dapat digunakan untuk data deret waktu yang memiliki pola arah.
 
 Fungsi yang akan kita gunakan dalam membuat model prhophet, yaitu
 
 - `prophet_reg()`: Fungsi ini digunakan untuk membuat model prhophet dari <i>framework</i> `modeltime`.
-- `set_engine()`: Fungsi ini kita gunakan untuk mengatur bagaiama model prhophet tersebut akan dibuat.
+- `set_engine()`: Fungsi ini kita gunakan untuk mengatur bagaiama model prophet tersebut akan dibuat, jika kita ingin mesin yang mencari hasil <i>hyperparameter</i> untuk model prophet kita bisa mengisinya dengan `prophet`.
 - `fit()`: Fungsi ini kita gunakan untuk memberitahu objek data dan kolom apa yang akan digunakan sebagai prediktor dan sebagai target variabel.
 
 ```{r}
@@ -227,9 +227,11 @@ model_fit_prophet <- prophet_reg() %>%
 model_fit_prophet
 ```
 
+<i>Disclaimer</i>, ketika kita menyerahkan kepada mesin untuk mencari <i>hyperparameter</i> untuk setiap model yang kita gunakan, tidak berarti model tersebut akan menghasilkan performa yang paling baik. Jika dirasa performa yang dihasilkan nantinya kurang memuaskan, kita bisa kembali ke tahapan ini untuk mengatur <i>hyperparameter</i> secara manual.
+
 ## Penggabungan Machine Learning Model
 
-Tahap selanjutnya yang bisa kita lakukan adalah menggabungkan ketiga model yang sudah dibuat menjadi satu. Tujuan penggabungan dari ketiga model tersebut adalah untuk mempermudah beberapa proses selanjutnya yaitu proses pelatihan model, evaluasi model dan prediksi masa depan karena dengan menggabungkan semua model menjadi satu kesatuan, kita hanya perlu melakukan pelatihan model, evaluasi model dan prediksi sebanyak satu kali saja. 
+Tahap selanjutnya yang bisa kita lakukan adalah menggabungkan ketiga model yang sudah dibuat menjadi satu kesatuan. Tujuan penggabungan dari ketiga model tersebut adalah untuk mempermudah beberapa proses selanjutnya yaitu proses pelatihan model, evaluasi model dan prediksi masa depan karena dengan menggabungkan semua model menjadi satu kesatuan, kita hanya perlu melakukan pelatihan model, evaluasi model dan prediksi sebanyak satu kali saja. 
 
 Untuk menggabungkan beberapa model menjadi satu kesatuan, kita dapat memanfaatkan sebuah fungsi yang bernama `modeltime_table()`.
 
@@ -266,7 +268,7 @@ resamples_fitted %>%
                              .interactive = FALSE)
 ```
 
-Opsi lain untuk melihat evaluasi model adalah dengan menggunakan fungsi `plot_modeltime_resamples()`. Fungsi tersebut nantinya akan menghasilkan 6 plot interaktif, dimana setiap plot tersebut akan mewakili sebuah perhitungan error untuk setiap pembagian data validasinya, jadinya kita dapat langsung melihat secara menyeluruh bagaimana peforma model yang dibuat pada 4 data yang berbeda. 
+Opsi lain untuk melihat evaluasi model adalah dengan menggunakan fungsi `plot_modeltime_resamples()`. Fungsi tersebut nantinya akan menghasilkan 6 plot interaktif, dimana setiap plot tersebut akan mewakili sebuah perhitungan error untuk setiap pembagian data validasinya, jadinya kita dapat langsung melihat secara menyeluruh bagaimana performa model yang dibuat pada 4 data yang berbeda. 
 
 ```{r, fig.width=8}
 resamples_fitted %>%
@@ -299,32 +301,34 @@ forecast <- refit_tbl %>%
 forecast 
 ```
 
-Hasil prediksi dari fungsi `modeltime_forecast()` akan menghasilkan sebuah dataframe dan untuk melihat hasil prediksinya kita dapat melihat dari kolom `.value`. Opsi lain yang dapat kita lakukan untuk melihat hasil prediksi dari ketiga model yang kita buat adalah dengan membuat sebuah visulasisi dengan memanfaatkan fungsi `plot_modeltime_forecast()`.
+Hasil prediksi dari fungsi `modeltime_forecast()` akan menghasilkan sebuah dataframe dan untuk melihat hasil prediksinya kita dapat melihat dari kolom `.value`. Opsi lain yang dapat kita lakukan untuk melihat hasil prediksi dari ketiga model yang kita buat adalah dengan membuat sebuah visualisasi dengan memanfaatkan fungsi `plot_modeltime_forecast()`.
 
 ```{r, fig.width=8}
 forecast %>%
     plot_modeltime_forecast(.interactive = TRUE)
 ```
 
-Dari visualisasi yang dihasilkan, kita dapat melihat bahwa model ARIMA dan Exponential Smoothing menghasilkan prediski yang memiliki kenaikan konstan dari bulan ke bulannya tanpa adanya penurunan sama sekali. Prediksi yang membuat garis lurus pada model ARIMA dan Exponential Smoothing dapat terjadi dikarenakan kedua model tersebut menggunakan parameter <i>auto</i> yang menghasilkan <i>hyperparameter</i> yang tidak memperhitungkan pola musiman dan hasil tersebut cukup sering terjadi pada model <i>time sereis forecasting</i> yang menggunakan parameter <i>auto</i>.
+Dari visualisasi yang dihasilkan, kita dapat melihat bahwa model ARIMA dan Exponential Smoothing menghasilkan prediksi yang memiliki kenaikan konstan dari bulan ke bulannya tanpa adanya penurunan sama sekali. Prediksi yang membuat garis lurus pada model ARIMA dan Exponential Smoothing dapat terjadi dikarenakan kedua model tersebut menggunakan parameter <i>auto</i> yang menghasilkan <i>hyperparameter</i> yang tidak memperhitungkan pola musiman dan hasil tersebut cukup sering terjadi pada model <i>time sereis forecasting</i> yang menggunakan parameter <i>auto</i>.
 
 Sedangkan untuk model prophet, model prophet menghasilkan prediksi yang tidak memiliki kenaikan konstan di setiap bulannya. Akan tetapi pada awal prediksi, model prophet langung memprediksi hasil tambang minyak bumi di Amerika Serikat pada bulan Juli 2018 sebesar 767 ribu barel.
 
-Hasil prediksi yang dihasilkan tentu saja tidak 100% akurat, untuk mengetahui seberapa besar error yang mungkin terjadi kita dapat memanfaatkan rata-rata nilai error pada tahapan evaluasi model sebelumnya.
+Hasil prediksi yang dihasilkan tentu saja tidak 100% akurat, untuk mengetahui seberapa besar error yang mungkin terjadi, kita dapat memanfaatkan rata-rata nilai error pada tahapan evaluasi model sebelumnya.
 
-<i>Disclaimer</i>: Pada tahapan prediksi model tidak harus menggunakan keseluruhan model yang dibuat, kita hanya perlu menggunakan satu model saja yang dirasa memiliki peforma paling baik.
+<i>Disclaimer</i>: Pada tahapan prediksi model tidak harus menggunakan keseluruhan model yang dibuat, kita hanya perlu menggunakan satu model saja yang dirasa memiliki performa paling baik.
 
 # Kesimpulan
 
-Di sini kita dapat menarik kesimpulan bahwa, dengan adanya <i>framework</i> `modeltime` akan sangat membantu dalam menghadapi data deret waktu karena `modeltime` sudah menyediakan sebuah alur kerja yang dapat kita ikuti mulai dari untuk mendapatkan hasil prediksi yang terbaik dari berbabgai macam model <i>time series forecasting</i> tanpa harus menggunakan berbagai macam fungsi dan <i>package</i> yang berebeda-beda.
+Setelah mengimplementasikan <i>framework</i> `modeltime` untuk memprediksi hasil minyak bumi di Amerika Serika. Kita dapat menarik kesimpulan bahwa <i>framework</i> `modeltime` sangat membantu dalam pengerjaan kasus deret waktu karena hanya dengan satu framework saja kita sudah disediakan berbagai macam fitur yang dapat kita manfaatkan untuk setiap tahapannya, 
+dimana setiap tahapan yang perlu dilakukan juga sudah disediakan, sehingga proses pengerjaan yang kita lakukan menjadi lebih terstruktur.
 
-Dalam kasus ini, 
+Pada artikel ini, kita juga menambahkan satu buah package tambahan yang masih menjadi keluarga `modeltime` yaitu `modeltime.resample`, dimana package tersebut akan membantu pada tahapan <i>cross validation</i> karena dengan bantuan package tersebut kita dapat membagi data latih dan data validasi menjadi ke beberapa kurun waktu yang berbeda. Dengan memiliki beberapa data latih dan data validasi kita dapat melakukan evaluasi terhadap model yang digunakan dengan lebih baik lagi.
+
+Dari beberapa implementasi dari <i>framework</i> `modeltime` yang sudah kita gunakan pada artikel ini, sebenarnya masih ada banyak lagi implementasi yang dapat kita manfaatkan untuk kebutuhan kasus deret waktu lainnya. Eksplorasi lanjutan mengenai apa saja yang dapat dilakukan dengan menggunakan `modeltime` dapat mengunjungi beberapa link referensi di bawah ini.
 
 <b>Referensi:</b>
 
 1. [Getting Started With Modeltime](https://business-science.github.io/modeltime/articles/getting-started-with-modeltime.html)
 2. [Getting Started With Modeltime Resample](https://business-science.github.io/modeltime.resample/articles/getting-started.html)
-3. [Introduction to ARIMA: nonseasonal models](https://people.duke.edu/~rnau/411arim.htm)
 4. [Modeltime Ecosystem Roadmap: New Algorithms & Models](https://github.com/business-science/modeltime/issues/5)
 
 
