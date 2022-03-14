@@ -1,5 +1,5 @@
 ---
-title: "Time Series Forecasting Dengan Modeltime"
+title: "Time Series Forecasting Dengan Framework Modeltime"
 author: "Victor Nugraha"
 date: "3/8/2022"
 output: 
@@ -43,9 +43,9 @@ Selain itu, `modeltime` menyediakan sebuah <i>workflow</i> yang dapat kita manfa
 
 * <b>Tahapan 1 - Persiapan Data</b>: Pada tahapan pertama ini akan mencangkup proses pengumpulan data, pembersihan data dan eksplorasi terhadap data kita.
 * <b>Tahapan 2 - <i>Cross Validation</i></b>: Tahapan kedua yang harus dilakukan adalah memisahkan data kita menjadi data pembelajaran dan data evaluasi, proses pemisahan data tersebut nantinya bisa dibantu oleh package `modeltime.resample` yang masih menjadi keluarga dari `modeltime`. 
-* <b>Tahapan 3 - Mempersiapkan <i>Model Machine Learning</i></b>: Tahapan ketiga adalah tahapan dimana kita akan membuat <i>model machine learning time series</i>. Dikarenakan `modeltime` memiliki berbagai macam model yang dapat kita gunakan, tentu saja kita dapat membuat beberapa model sekaligus.
+* <b>Tahapan 3 - Mempersiapkan <i>Model Machine Learning</i></b>: Tahapan ketiga adalah tahapan di mana kita akan membuat <i>model machine learning time series</i>. Dikarenakan `modeltime` memiliki berbagai macam model yang dapat kita gunakan, tentu saja kita dapat membuat beberapa model sekaligus.
 * <b>Tahapan 4 - Menggabungkan Model Ke Sebuah Tabel</b>: Jika kita membuat beberapa model sekaligus, kita dapat menggabungkan beberapa model tersebut ke sebuah tabel agar lebih rapi dan lebih mudah untuk dibandingkan pada tahapan berikutnya.
-* <b>Tahapan 5 - Pelatihan & Evaluasi</b>: Tahapan selanjutnya adalah melakukan prediksi terhadap data evaluasi dan melakukan evaluasai terhadap hasil prediksinya.
+* <b>Tahapan 5 - Pelatihan, Evaluasi & Uji Asumsi</b>: Tahapan selanjutnya adalah melakukan prediksi terhadap data evaluasi, setelah itu kita akan melakukan evaluasai terhadap hasil prediksinya dan sekaligus melakukan uji asumsi.
 * <b>Tahapan 6 - Prediksi Masa Depan</b>: Tahapan terakhir yang dapat kita lakukan adalah memprediksi masa depan.
 
 Tentu saja sebagai seorang <i>Data Scientist</i> kita akan sangat terbantu karena kita sudah memiliki sebuah <i>framework</i> yang memungkinkan kita untuk bekerja lebih cepat dan rapi. 
@@ -57,6 +57,10 @@ Tentu saja sebagai seorang <i>Data Scientist</i> kita akan sangat terbantu karen
 library(tidyverse)
 library(lubridate)
 library(timetk)
+
+# Data Visualization
+library(plotly)
+library(glue)
 
 # Machine Learning
 library(tidymodels)
@@ -80,6 +84,10 @@ crude_oil
 ```
 
 Dari total 36 kolom yang terdapat pada dataframe di atas, kita hanya akan menggunakan 2 kolom saja yaitu kolom `Month` dan `U.S..Crude.Oil`. Kolom `Month` berisikan informasi tanggal setiap awal bulan dari Juni 2008 sampai Juni 2018 dan pada kolom `U.S..Crude.Oil` berisikan informasi jumlah hasil tambang minyak bumi dari setiap daerah di Amerika Serikat dalam satuan 1000 barel, jumlah hasil tambang minyak bumi pada kolom `U.S..Crude.Oil` berdasarkan penjumlahan dari 34 kolom lainnya. 
+
+Dari kedua kolom tersebut nantinya akan coba kita manfaatkan untuk memprediksi berapa banyak minyak bumi yang dapat ditambang oleh Amerika Serikat selama satu tahun kedepan. Informasi hasil prediksi tersebut akan bermanfaat untuk negara karena minyak bumi merupakan salah satu bahan mentah yang digunakan untuk berbagai macam kebutuhan di berbagai sektor industri. Maka dari itu, hasil prediksi akan menjadi bahan pertimbangan Amerika Serikat dalam menentukan langkah kedepannya. 
+
+Sebagai contoh, misalkan hasil prediksi menyatakan adanya penurunan hasil minyak bumi selama 1 tahun kedepan dan prediksi penurunannya sampai di titik di mana hasil tambang minyak bumi tidak dapat memenuhi kebutuhan selama 1 tahun kedepan, maka negara Amerika Serikat bisa mengambil keputusan lebih cepat untuk mengimpor minyak bumi dari negara lain agar tidak mengalami kekurangan.
 
 ### Pembersihan Data
 
@@ -108,7 +116,7 @@ Dari hasil observasi di atas, kita mengetahi bahwa pada data kita tidak ada <i>m
 
 Untuk mempermudah tahapan eksplorasi data untuk kasus deret waktu, kita akan membuat sebuah visualisasi garis dengan menggunakan fungsi `plot_time_series` dari `library(timetk)`. 
 
-Hasil dari visualisasi tersebut nantinya akan sangat membantu kita untuk mengetahui apakah hasil tambang minyak bumi di Amerika Serikat memiliki sebuah pola arah atau pola musiman. Jika nantinya dari hasil visualisasi ternyata data deret waktu tidak memiliki pola arah atau pola musiman, maka dapat dikategorikan sebagai data stasioner dan jika memiliki entah sebuah pola arah atau pola musiman, maka dapat dikategorikan sebagai data tidak stasioner.
+Hasil dari visualisasi tersebut nantinya akan sangat membantu kita untuk mengetahui apakah hasil tambang minyak bumi di Amerika Serikat memiliki sebuah pola arah atau pola musiman. Jika nantinya dari hasil visualisasi menunjukan bahwa data deret waktu tidak memiliki pola arah dan tidak pola musiman, maka dapat dikategorikan sebagai data stasioner. Jika memiliki salah satu di antara pola arah atau pola musiman, maka dapat dikategorikan sebagai data tidak stasioner.
 
 Identifikasi mengenai kategori data pada kasus deret waktu merupakan hal yang penting karena akan menentukan pendekatan yang akan digunakan nantinya. 
 
@@ -156,8 +164,33 @@ resamples_tscv %>%
     tk_time_series_cv_plan() %>%
     plot_time_series_cv_plan(.date_var = Month, 
                              .value = U.S..Crude.Oil, 
-                             .facet_ncol = 4, 
                              .interactive = TRUE)
+```
+
+```{r, echo=F}
+# plot_tscv <- 
+# resamples_tscv %>%
+#   tk_time_series_cv_plan() %>%
+#   mutate(text = glue("Data: {.key}
+#                       Tanggal: {Month}
+#                       Hasil Minyak Bumi: {comma(U.S..Crude.Oil, 3)}")) %>% 
+#   ggplot(mapping = aes(x = Month, 
+#                        y = U.S..Crude.Oil, 
+#                        group = .key,
+#                        text = text)) +
+#   geom_line(mapping = aes(color = .key)) +
+#   facet_wrap(~.id, 
+#              scales = "free_y", 
+#              ncol = 4) +
+#   scale_y_continuous(labels = comma) +
+#   labs(title = "Time Series Cross Validation",
+#        x = "",
+#        y = "",
+#        color = "Data") +
+#   theme(axis.text.x = element_text(size = 2)) +
+#   theme_light() 
+# 
+# ggplotly(plot_tscv, tooltip = "text", width = 1100, height = 500)
 ```
 
 ## Machine Learning Model
@@ -184,7 +217,7 @@ model_fit_arima <- arima_reg() %>%
     fit(formula = U.S..Crude.Oil ~ Month, 
         data = crude_oil_clean)
 
-model_fit_arima
+model_fit_arima 
 ```
 
 - <b>ETS</b>
@@ -257,6 +290,7 @@ resamples_fitted <- models_tbl %>%
 
 resamples_fitted
 ```
+
 - <b>Evaluasi Model</b>
 
 Seperti yang sempat disampaikan sebelumnya, fungsi `modeltime_fit_resamples()` juga akan melakukan perhitungan error yang dapat kita manfaatkan untuk evaluasi ketiga model yang sudah kita buat. Untuk dapat melihat hasil perhitungan error, kita akan memanfaatkan fungsi `modeltime_resample_accuracy()` dan `table_modeltime_accuracy()`. Nantinya kedua fungsi tersebut akan membuat sebuah tabel evaluasi yang berisikan 6 perhitungan evaluasi error. Akan tetapi hasil dari tabel evaluasi yang akan kita buat tidak langsung menampilkan perhitungan evaluasi error untuk setiap pembagian data, melainkan hanya untuk pembagian data yang paling akhir saja atau untuk kurun waktu dari Agustus 2009 sampai Mei 2015.
@@ -268,7 +302,7 @@ resamples_fitted %>%
                              .interactive = FALSE)
 ```
 
-Opsi lain untuk melihat evaluasi model adalah dengan menggunakan fungsi `plot_modeltime_resamples()`. Fungsi tersebut nantinya akan menghasilkan 6 plot interaktif, dimana setiap plot tersebut akan mewakili sebuah perhitungan error untuk setiap pembagian data validasinya, jadinya kita dapat langsung melihat secara menyeluruh bagaimana performa model yang dibuat pada 4 data yang berbeda. 
+Opsi lain untuk melihat evaluasi model adalah dengan menggunakan fungsi `plot_modeltime_resamples()`. Fungsi tersebut nantinya akan menghasilkan 6 plot interaktif, di mana setiap plot tersebut akan mewakili sebuah perhitungan error untuk setiap pembagian data validasinya, jadinya kita dapat langsung melihat secara menyeluruh bagaimana performa model yang dibuat pada 4 data yang berbeda. 
 
 ```{r, fig.width=8}
 resamples_fitted %>%
@@ -276,6 +310,98 @@ resamples_fitted %>%
 ```
 
 Dari plot evaluasi error di atas kita dapat menarik kesimpulan bahwa, model ARIMA dan Exponential Smoothing memiliki error yang relatif stabil untuk setiap 4 rentang waktu yang ada, sedangkan untuk nilai error yang dihasilkan oleh model prophet dapat disimpulkan kurang stabil. Selain itu, kita juga dapat menyimpulkan bahwa model ARIMA adalah model yang memiliki rata-rata error yang paling kecil hampir di setiap matriks evaluasi error yang digunakan. 
+
+- <b>Uji Asumsi</b>
+
+Selain melihat dari evaluasi nilai error yang dihasilkan, kita juga dapat melakukan uji asumsi. Uji asumsi pada kasus deret waktu dilakukan untuk mengukur apakah residual yang peroleh dari setiap model <i>time series forecasting</i> sudah cukup baik untuk menggambarkan dan menangkap informasi pada data. 
+
+Untuk melakukan uji asumsi, kita dapat memanfaatkan 2 fungsi yang sudah disediakan oleh `modeltime`, yaitu
+
+- `modeltime_residuals`: Fungsi ini digunakan untuk mengeluarkan nilai residual dari setiap model yang dibuat. Pada fungsi ini, kita juga harus mengisi parameter `new_data`. Parameter tersebut akan kita isi dengan data latih dari setiap rentan waktu yang sudah dipisahkan pada tahapan <i>cross validation</i>.
+- `modeltime_residuals_test`: Fungsi ini digunakan untuk melakukan uji asumsi berdasarkan nilai residual dari setiap model yang dibuat. Ada 4 uji asumsi yang akan dilakukan fungsi ini, yaitu: <i>Shapiro-Wilk, Box-Pierce, Ljung-Box dan Durbin-Watson.</i>
+
+Berikut adalah syarat dari setiap uji asumsi yang akan diujikan,
+
+<b><i>Shapiro-Wilk</i></b>
+
+Shapiro-Wilk menguji normalitas residual. Di mana,
+
+- $H_0$: residual berdistribusi normal
+- $H_1$: residual tidak berdistribusi normal
+
+Yang diharapkan dari hasil uji asumsi ini adalah residual berdistribusi normal. Untuk mengetahui hal tersebut, kita akan melihat nilai p-value. Jika nilai p-value > 0,05, hal tersebut menunjukkan bahwa sebaran data tidak berbeda nyata dengan sebaran normal. Dengan kata lain, kita dapat mengasumsikan residual berdistribusi normal.
+
+<b><i>Box-Pierce & Ljung-Box</i></b>
+
+Ljung-Box dan Box-Pierce adalah metode yang menguji autokorelasi pada residual. Di mana,
+
+- $H_0$: residual tidak ber-autokorelasi
+- $H_1$: residual memiliki autokorelasi
+
+Yang diharapkan dari hasil uji asumsi ini adalah residual tidak ber-autokorelasi. Untuk mengetahui hal tersebut, kita akan melihat nilai p-value. Jika nilai p-value > 0,05, hal tersebut menunjukkan bahwa residual dari data adalah independen. Dengan kata lain, kita dapat mengasumsikan residual tidak ber-autokorelasi.
+
+<b><i>Durbin-Watson</i></b>
+
+Durbin-Watson adalah metode lain yang menguji autokrelasi pada residual. Uji asumsi Durbin Watson melaporkan statistik uji, dengan nilai dari 0 hingga 4, di mana:
+
+- 2 tidak ada autokorelasi 
+- Dari 0 hingga <2 adalah ada  positif (umum dalam data deret waktu)
+- Dari >2 hingga 4 adalah ada autokorelasi negatif (kurang umum dalam data deret waktu)
+
+Yang diharapkan dari hasil Durbin-Watson adalah nilai 2, yang berarti residual tidak ber-autokorelasi.
+
+```{r}
+# Uji Asumsi Data Slice 1
+
+data_train_slice1 <- resamples_tscv %>%
+  tk_time_series_cv_plan() %>% 
+  filter(.id == "Slice1" & .key == "testing")
+
+models_tbl %>% 
+  modeltime_residuals(new_data = data_train_slice1) %>% 
+  modeltime_residuals_test()
+```
+
+```{r}
+# Uji Asumsi Data Slice 2
+
+data_train_slice2 <- resamples_tscv %>%
+  tk_time_series_cv_plan() %>% 
+  filter(.id == "Slice2" & .key == "testing")
+
+models_tbl %>% 
+  modeltime_calibrate(new_data = data_train_slice2) %>% 
+  modeltime_residuals() %>% 
+  modeltime_residuals_test()
+```
+
+```{r}
+# Uji Asumsi Data Slice 3
+
+data_train_slice3 <- resamples_tscv %>%
+  tk_time_series_cv_plan() %>% 
+  filter(.id == "Slice3" & .key == "testing")
+
+models_tbl %>% 
+  modeltime_calibrate(new_data = data_train_slice3) %>% 
+  modeltime_residuals() %>% 
+  modeltime_residuals_test()
+```
+
+```{r}
+# Uji Asumsi Data Slice 4
+
+data_train_slice4 <- resamples_tscv %>%
+  tk_time_series_cv_plan() %>% 
+  filter(.id == "Slice4" & .key == "testing")
+
+models_tbl %>% 
+  modeltime_calibrate(new_data = data_train_slice4) %>% 
+  modeltime_residuals() %>% 
+  modeltime_residuals_test()
+```
+
+Dari hasil uji asumsi yang sudah dilakukan di atas, kita dapat menarik kesimpulan bahwa model ARIMA selalu lulus uji asumsi <i>Shapiro-Wilk, Box-Pierce dan Ljung-Box</i> pada 4 rentan waktu yang berbeda dan lulus uji asumsi <i>Durbin-Watson</i> pada rentan waktu slice ke 2. Sedangkan untuk kedua model lainnya, beberapa kali gagal pada uji asumsi <i>Shapiro-Wilk, Box-Pierce dan Ljung-Box</i>.
 
 ## Prediksi Masa Depan
 
@@ -318,10 +444,20 @@ Hasil prediksi yang dihasilkan tentu saja tidak 100% akurat, untuk mengetahui se
 
 # Kesimpulan
 
-Setelah mengimplementasikan <i>framework</i> `modeltime` untuk memprediksi hasil minyak bumi di Amerika Serika. Kita dapat menarik kesimpulan bahwa <i>framework</i> `modeltime` sangat membantu dalam pengerjaan kasus deret waktu karena hanya dengan satu framework saja kita sudah disediakan berbagai macam fitur yang dapat kita manfaatkan untuk setiap tahapannya, 
-dimana setiap tahapan yang perlu dilakukan juga sudah disediakan, sehingga proses pengerjaan yang kita lakukan menjadi lebih terstruktur.
+- <b>Kesimpulan bisnis</b>
 
-Pada artikel ini, kita juga menambahkan satu buah package tambahan yang masih menjadi keluarga `modeltime` yaitu `modeltime.resample`, dimana package tersebut akan membantu pada tahapan <i>cross validation</i> karena dengan bantuan package tersebut kita dapat membagi data latih dan data validasi menjadi ke beberapa kurun waktu yang berbeda. Dengan memiliki beberapa data latih dan data validasi kita dapat melakukan evaluasi terhadap model yang digunakan dengan lebih baik lagi.
+Dari keseluruhan proses yang sudah dilakukan, kita dapat menarik kesimpulan bahwa model ARIMA adalah model yang paling baik untuk digunakan dalam memprediksi hasil tambang minyak bumi di Amerika Serikat karena jika dilihat dari rata-rata nilai error yang dihasilkan berdasarkan 4 rentan waktu yang berbeda, model ARIMA lah yang memiliki rata-rata error paling kecil. Selain itu juga, model ARIMA selalu lulus uji asumsi <i>Shapiro-Wilk, Box-Pierce dan Ljung-Box</i> pada 4 rentan waktu yang berbeda. 
+
+Berlandasan dengan hasil evaluasi error dan uji asumsi, kita disini dapat melihat hasil prediksi masa depan dari model ARIMA. Dimana model tersebut menunjukan bahwa hasil tambang minyak bumi di Amerika Serika selama 1 tahun kedepan dari bulan Juli 2018 sampai Juni 2019 akan terus mengalami peningkatan dengan tingkat error MAPE sebesar 6.31%. 
+
+Hasil prediksi tersebut bisa dimanfaatkan oleh pemerintah Amerika Serikat dalam menentukan apakah hasil tambang minyak bumi selama satu tahun kedepan masih mencukupi untuk setiap sektor industrii yang membutuhkan. Jika dirasa dari hasil prediksi hasil tambang minyak bumi tidak mencukupi, makan pemerintah Amerika Serikat bisa mengambil keputusan lebih cepat untuk mengimpor minyak bumi dari negara lain agar tidak mengalami kekurangan. Selain itu, jika dirasa dari hasil prediksi hasil tambang minyak bumi berlimpah, pemerintah dapat mengambil dua keputusan yaitu menurunkan harga jual minyak bumi ataupun melakukan ekspor ke negara lain yang membutuhkan.
+
+- <b>Kesimpulan <i>framework</i> modeltime</b>
+
+Setelah mengimplementasikan <i>framework</i> `modeltime` untuk memprediksi hasil minyak bumi di Amerika Serika. Kita dapat menarik kesimpulan bahwa <i>framework</i> `modeltime` sangat membantu dalam pengerjaan kasus deret waktu karena hanya dengan satu framework saja kita sudah disediakan berbagai macam fitur yang dapat kita manfaatkan untuk setiap tahapannya, 
+di mana setiap tahapan yang perlu dilakukan juga sudah disediakan, sehingga proses pengerjaan yang kita lakukan menjadi lebih terstruktur.
+
+Pada artikel ini, kita juga menambahkan satu buah package tambahan yang masih menjadi keluarga `modeltime` yaitu `modeltime.resample`, di mana package tersebut akan membantu pada tahapan <i>cross validation</i> karena dengan bantuan package tersebut kita dapat membagi data latih dan data validasi menjadi ke beberapa kurun waktu yang berbeda. Dengan memiliki beberapa data latih dan data validasi kita dapat melakukan evaluasi terhadap model yang digunakan dengan lebih baik lagi.
 
 Dari beberapa implementasi dari <i>framework</i> `modeltime` yang sudah kita gunakan pada artikel ini, sebenarnya masih ada banyak lagi implementasi yang dapat kita manfaatkan untuk kebutuhan kasus deret waktu lainnya. Eksplorasi lanjutan mengenai apa saja yang dapat dilakukan dengan menggunakan `modeltime` dapat mengunjungi beberapa link referensi di bawah ini.
 
@@ -330,6 +466,7 @@ Dari beberapa implementasi dari <i>framework</i> `modeltime` yang sudah kita gun
 1. [Getting Started With Modeltime](https://business-science.github.io/modeltime/articles/getting-started-with-modeltime.html)
 2. [Getting Started With Modeltime Resample](https://business-science.github.io/modeltime.resample/articles/getting-started.html)
 4. [Modeltime Ecosystem Roadmap: New Algorithms & Models](https://github.com/business-science/modeltime/issues/5)
+5. [Apply Statistical Tests to Residuals](https://business-science.github.io/modeltime/reference/modeltime_residuals_test.html)
 
 
 
