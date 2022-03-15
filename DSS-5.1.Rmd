@@ -317,7 +317,7 @@ Selain melihat dari evaluasi nilai error yang dihasilkan, kita juga dapat melaku
 
 Untuk melakukan uji asumsi, kita dapat memanfaatkan 2 fungsi yang sudah disediakan oleh `modeltime`, yaitu
 
-- `modeltime_residuals`: Fungsi ini digunakan untuk mengeluarkan nilai residual dari setiap model yang dibuat. Pada fungsi ini, kita juga harus mengisi parameter `new_data`. Parameter tersebut akan kita isi dengan data latih dari setiap rentan waktu yang sudah dipisahkan pada tahapan <i>cross validation</i>.
+- `modeltime_residuals`: Fungsi ini digunakan untuk mengeluarkan nilai residual dari setiap model yang dibuat. Pada fungsi ini, kita juga harus mengisi parameter `new_data`, parameter tersebut akan kita isi dengan keseluruhan data.
 - `modeltime_residuals_test`: Fungsi ini digunakan untuk melakukan uji asumsi berdasarkan nilai residual dari setiap model yang dibuat. Ada 4 uji asumsi yang akan dilakukan fungsi ini, yaitu: <i>Shapiro-Wilk, Box-Pierce, Ljung-Box dan Durbin-Watson.</i>
 
 Berikut adalah syarat dari setiap uji asumsi yang akan diujikan,
@@ -350,58 +350,19 @@ Durbin-Watson adalah metode lain yang menguji autokrelasi pada residual. Uji asu
 
 Yang diharapkan dari hasil Durbin-Watson adalah nilai 2, yang berarti residual tidak ber-autokorelasi.
 
+Setelah mengetahui syarat-syarat yang harus dipenuhi dari 4 uji asumsi yang akan digunakan, sekarang kita akan mencoba melihat nilai residual untuk setiap model dari objek `models_tbl`.
+
 ```{r}
-# Uji Asumsi Data Slice 1
-
-data_train_slice1 <- resamples_tscv %>%
-  tk_time_series_cv_plan() %>% 
-  filter(.id == "Slice1" & .key == "testing")
-
 models_tbl %>% 
-  modeltime_residuals(new_data = data_train_slice1) %>% 
+  modeltime_residuals(new_data = crude_oil_clean) %>% 
   modeltime_residuals_test()
 ```
 
-```{r}
-# Uji Asumsi Data Slice 2
+Dari hasil uji asumsi yang sudah dilakukan di atas, kita dapat menarik kesimpulan bahwa dari ketiga model yang kita buat hanya model prophet yang lulus uji asumsi <i>Shapiro Wilk</i>, akan tetapi model prophet tidak berhasil lulus untuk uji asumsi lainnya. Untuk model ARIMA dan Exponential Smoothing, kedua model tersebut memang tidak lulus untuk uji asumsi yang melihat persebaran data, akan tetapi model Exponential Smoothing lulus untuk uji asumsi <i> Box Pierce & Ljung Box</i> dan model ARIMA lulus uji asumsi <i>Box Pierce, Ljung Box & Durbin Watson</i>. 
 
-data_train_slice2 <- resamples_tscv %>%
-  tk_time_series_cv_plan() %>% 
-  filter(.id == "Slice2" & .key == "testing")
+Walaupun dari ketiga model yang dibuat tidak ada yang berhasil lulus dari keseluruhan uji asumsi yang dilakukan, kita akan tetap menggunakan ketiga model tersebut untuk melakukan prediksi masa depan.
 
-models_tbl %>% 
-  modeltime_calibrate(new_data = data_train_slice2) %>% 
-  modeltime_residuals() %>% 
-  modeltime_residuals_test()
-```
-
-```{r}
-# Uji Asumsi Data Slice 3
-
-data_train_slice3 <- resamples_tscv %>%
-  tk_time_series_cv_plan() %>% 
-  filter(.id == "Slice3" & .key == "testing")
-
-models_tbl %>% 
-  modeltime_calibrate(new_data = data_train_slice3) %>% 
-  modeltime_residuals() %>% 
-  modeltime_residuals_test()
-```
-
-```{r}
-# Uji Asumsi Data Slice 4
-
-data_train_slice4 <- resamples_tscv %>%
-  tk_time_series_cv_plan() %>% 
-  filter(.id == "Slice4" & .key == "testing")
-
-models_tbl %>% 
-  modeltime_calibrate(new_data = data_train_slice4) %>% 
-  modeltime_residuals() %>% 
-  modeltime_residuals_test()
-```
-
-Dari hasil uji asumsi yang sudah dilakukan di atas, kita dapat menarik kesimpulan bahwa model ARIMA selalu lulus uji asumsi <i>Shapiro-Wilk, Box-Pierce dan Ljung-Box</i> pada 4 rentan waktu yang berbeda dan lulus uji asumsi <i>Durbin-Watson</i> pada rentan waktu slice ke 2. Sedangkan untuk kedua model lainnya, beberapa kali gagal pada uji asumsi <i>Shapiro-Wilk, Box-Pierce dan Ljung-Box</i>.
+<i>Disclaimer</i>, Idealnya ketika kita membuat model <i>time series forecasting</i>, model tersebut harus lulus dari setiap uji asumsi yang dilakukan tanpa adanya pengecualian. Jika kita tetap memaksakan untuk menggunakan model yang tidak lulus uji asumsi, kita tidak bisa mempercayai keakuratan model tersebut dalam memprediksi walaupun sudah ada nilai tolerasi dari evaluasi error.
 
 ## Prediksi Masa Depan
 
@@ -446,11 +407,11 @@ Hasil prediksi yang dihasilkan tentu saja tidak 100% akurat, untuk mengetahui se
 
 - <b>Kesimpulan bisnis</b>
 
-Dari keseluruhan proses yang sudah dilakukan, kita dapat menarik kesimpulan bahwa model ARIMA adalah model yang paling baik untuk digunakan dalam memprediksi hasil tambang minyak bumi di Amerika Serikat karena jika dilihat dari rata-rata nilai error yang dihasilkan berdasarkan 4 rentan waktu yang berbeda, model ARIMA lah yang memiliki rata-rata error paling kecil. Selain itu juga, model ARIMA selalu lulus uji asumsi <i>Shapiro-Wilk, Box-Pierce dan Ljung-Box</i> pada 4 rentan waktu yang berbeda. 
+Dari keseluruhan proses yang sudah dilakukan, kita dapat menarik kesimpulan bahwa model ARIMA adalah model yang paling baik untuk digunakan dalam memprediksi hasil tambang minyak bumi di Amerika Serikat karena jika dilihat dari rata-rata nilai error yang dihasilkan berdasarkan 4 rentan waktu yang berbeda, model ARIMA lah yang memiliki rata-rata error paling kecil. Akan tetapi, dari ketiga model yang dibuat, tidak ada model yang berhasil lulus dari 4 uji asumsi yang dilakukan. Maka dari itu, tidak ada model yang dapat kita percayai untuk melakukan prediksi masa depan hasil tambang minyak bumi di Amerika Serikat.
 
-Berlandasan dengan hasil evaluasi error dan uji asumsi, kita disini dapat melihat hasil prediksi masa depan dari model ARIMA. Di mana model tersebut menunjukan bahwa hasil tambang minyak bumi di Amerika Serika selama 1 tahun kedepan dari bulan Juli 2018 sampai Juni 2019 akan terus mengalami peningkatan dengan tingkat error MAPE sebesar 6.31%. 
+Memiliki sebuah model yang mempunyai rata-rata nilai error paling kecil dan berhasil lulus dari seluruh uji asumsi sangatlah krusial dalam kasus ini karena dari hasil prediksi tersebut bisa dimanfaatkan oleh pemerintah Amerika Serikat dalam menentukan apakah hasil tambang minyak bumi selama satu tahun kedepan masih mencukupi untuk setiap sektor industri yang membutuhkan. Jika dirasa dari hasil prediksi hasil tambang minyak bumi tidak mencukupi, maka pemerintah Amerika Serikat bisa mengambil keputusan lebih cepat untuk mengimpor minyak bumi dari negara lain agar tidak mengalami kekurangan. Selain itu, jika dirasa dari hasil prediksi hasil tambang minyak bumi berlimpah, pemerintah dapat mengambil dua keputusan yaitu menurunkan harga jual minyak bumi ataupun melakukan ekspor ke negara lain yang membutuhkan. 
 
-Hasil prediksi tersebut bisa dimanfaatkan oleh pemerintah Amerika Serikat dalam menentukan apakah hasil tambang minyak bumi selama satu tahun kedepan masih mencukupi untuk setiap sektor industrii yang membutuhkan. Jika dirasa dari hasil prediksi hasil tambang minyak bumi tidak mencukupi, makan pemerintah Amerika Serikat bisa mengambil keputusan lebih cepat untuk mengimpor minyak bumi dari negara lain agar tidak mengalami kekurangan. Selain itu, jika dirasa dari hasil prediksi hasil tambang minyak bumi berlimpah, pemerintah dapat mengambil dua keputusan yaitu menurunkan harga jual minyak bumi ataupun melakukan ekspor ke negara lain yang membutuhkan.
+Berdasarkan keputusan yang bisa diambil oleh pemerintah Amerika Serikat dari hasil prediksi, kita harus bisa membuat sebuah model yang dapat dipercaya. Untuk mendapatkan model yang dapat dipercaya, kita bisa melakukan penyetelan manual terhadap <i>hyperparameter</i> setiap model yang kita gunakan atau kita bisa mencoba beberapa model lainnya seperti ARIMA Boost, prophet Boost atau Random Forest.
 
 - <b>Kesimpulan <i>framework</i> modeltime</b>
 
@@ -467,6 +428,7 @@ Dari beberapa implementasi dari <i>framework</i> `modeltime` yang sudah kita gun
 2. [Getting Started With Modeltime Resample](https://business-science.github.io/modeltime.resample/articles/getting-started.html)
 4. [Modeltime Ecosystem Roadmap: New Algorithms & Models](https://github.com/business-science/modeltime/issues/5)
 5. [Apply Statistical Tests to Residuals](https://business-science.github.io/modeltime/reference/modeltime_residuals_test.html)
+6. [What to do When the Assumptions of Your Analysis are Violated](https://www.statisticssolutions.com/what-to-do-when-the-assumptions-of-your-analysis-are-violated/)
 
 
 
