@@ -362,7 +362,7 @@ Dari hasil uji asumsi yang sudah dilakukan di atas, kita dapat menarik kesimpula
 
 Walaupun dari ketiga model yang dibuat tidak ada yang berhasil lulus dari keseluruhan uji asumsi yang dilakukan, kita akan tetap menggunakan ketiga model tersebut untuk melakukan prediksi masa depan.
 
-<i>Disclaimer</i>, Idealnya ketika kita membuat model <i>time series forecasting</i>, model tersebut harus lulus dari setiap uji asumsi yang dilakukan tanpa adanya pengecualian. Jika kita tetap memaksakan untuk menggunakan model yang tidak lulus uji asumsi, kita tidak bisa mempercayai keakuratan model tersebut dalam memprediksi walaupun sudah ada nilai tolerasi dari evaluasi error.
+<i>Disclaimer</i>, Idealnya ketika kita akan melakukan prediksi masa denpan dengan model <i>time series forecasting</i>, model tersebut harus lulus dari setiap uji asumsi yang dilakukan tanpa adanya pengecualian. Jika kita tetap memaksakan untuk menggunakan model yang tidak lulus uji asumsi, hasil dari model tersebut tidak bisa dipercayai walaupun sudah ada nilai toleransi dari evaluasi error.
 
 ## Prediksi Masa Depan
 
@@ -411,7 +411,7 @@ Dari keseluruhan proses yang sudah dilakukan, kita dapat menarik kesimpulan bahw
 
 Memiliki sebuah model yang mempunyai rata-rata nilai error paling kecil dan berhasil lulus dari seluruh uji asumsi sangatlah krusial dalam kasus ini karena dari hasil prediksi tersebut bisa dimanfaatkan oleh pemerintah Amerika Serikat dalam menentukan apakah hasil tambang minyak bumi selama satu tahun kedepan masih mencukupi untuk setiap sektor industri yang membutuhkan. Jika dirasa dari hasil prediksi hasil tambang minyak bumi tidak mencukupi, maka pemerintah Amerika Serikat bisa mengambil keputusan lebih cepat untuk mengimpor minyak bumi dari negara lain agar tidak mengalami kekurangan. Selain itu, jika dirasa dari hasil prediksi hasil tambang minyak bumi berlimpah, pemerintah dapat mengambil dua keputusan yaitu menurunkan harga jual minyak bumi ataupun melakukan ekspor ke negara lain yang membutuhkan. 
 
-Berdasarkan keputusan yang bisa diambil oleh pemerintah Amerika Serikat dari hasil prediksi, kita harus bisa membuat sebuah model yang dapat dipercaya. Untuk mendapatkan model yang dapat dipercaya, kita bisa melakukan penyetelan manual terhadap <i>hyperparameter</i> setiap model yang kita gunakan atau kita bisa mencoba beberapa model lainnya seperti ARIMA Boost, prophet Boost atau Random Forest.
+Berdasarkan keputusan yang bisa diambil oleh pemerintah Amerika Serikat dari hasil prediksi, kita tidak bisa sembarangan menggunakan model untuk memprediksi, model yang digunakan haruslah model yang memiliki error paling kecil dan lulus uji asumsi. Untuk mendapatkan model yang ideal seperti itu, kita bisa mencoba untuk melakukan penyetelan manual terhadap <i>hyperparameter</i> setiap model yang kita gunakan atau kita bisa mencoba beberapa model lainnya seperti ARIMA Boost, prophet Boost atau Random Forest. 
 
 - <b>Kesimpulan <i>framework</i> modeltime</b>
 
